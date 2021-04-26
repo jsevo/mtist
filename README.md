@@ -4,7 +4,8 @@
 A module to simulate (noisy) ecosystems.
 
 * create virtual environment
-* install with pip install -e mtist 
+* navigate to mtist folder
+* install with `pip install -e .`
 
 ```
 import mtist.lvsimulator as lv

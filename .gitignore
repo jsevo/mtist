@@ -96,7 +96,6 @@ ENV/
 .ropeproject
 .DS_Store
 *DS_Store*
-*.csv
 *.png
 *.pdf
 *.ai

@@ -1,5 +1,5 @@
-# MTIST v0.1
-*---still under development---*
+# MTIST
+
 
 A module to simulate (noisy) ecosystems.
 

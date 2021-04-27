@@ -106,7 +106,6 @@ ENV/
 
 # For VS Code settings
 .vscode
-/notebooks/*
 *.pickle
 taxumap/todo.md
 *.json

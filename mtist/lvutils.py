@@ -238,8 +238,6 @@ def run_lv(
     timepoints = np.linspace(0, tend, 100)
     for i, t in enumerate(timepoints[0:-1]):
         tend = timepoints[i + 1]
-        r = sp.ode(_lv(_A=A, _mu=mu)).set_integrator("vode")
-        r.set_initial_value(yinit, timepoints[i])
         while r.successful() and r.t < tend:
             sol_t_all = np.append(sol_t_all, r.t)
             sol_y_all = np.append(sol_y_all, r.y)

@@ -244,7 +244,7 @@ def run_lv(
             sol_t_all = np.append(sol_t_all, r.t)
             sol_y_all = np.append(sol_y_all, r.y)
             r.t + dt
-            r.integrate(r.t + dt)
+            r.integrate(min(r.t + dt, tend))
         yinit = r.y
         perturbation = [_y * noise * np.random.randn() for _y in yinit]
         yinit = yinit + perturbation

@@ -84,7 +84,7 @@ def prepare_data_for_inference(did):
     # NOW: Loop over each `timeseries_id`, each species and calculate proper
     # dlogydt and time matrices.
 
-    n_timepoints, n_species = X.shape
+    _, n_species = X.shape
 
     # These subsequent collectors will be indexed by
     # the `timeseries_id` code
@@ -456,7 +456,7 @@ def infer_from_did_lasso_cv(did, debug=False):
             lassocv = linear_model.LassoCV(
                 cv=5,
                 fit_intercept=True,
-                max_iter=10 ** 7,
+                max_iter=10**7,
             )
 
             reg = lassocv.fit(X_train, y_train)
@@ -768,7 +768,7 @@ def infer_from_did_elasticnet_cv(did, debug=False):
                 eps=1e-3,
                 cv=5,
                 fit_intercept=True,
-                max_iter=10 ** 7,
+                max_iter=10**7,
             )
 
             reg = enet.fit(X_train, y_train)
@@ -855,7 +855,7 @@ def run_mkspikeseq(X, y, progressbar=False, zellner=False):
         # mean_drugs = pm.math.dot(X_drugs, xi_drugs * beta_drugs)
 
         my_sigma = pm.HalfNormal("my_sigma", 10)
-        intercp = pm.Bound(pm.Normal, lower=0.0)("intercp", mu=1.0, tau=(init_r_std ** 2) * 1e2)
+        intercp = pm.Bound(pm.Normal, lower=0.0)("intercp", mu=1.0, tau=(init_r_std**2) * 1e2)
 
         # my_var = pm.Normal("my_var", mean_drugs + mean_taxa + intercp, my_sigma, observed=y)
         my_var = pm.Normal("my_var", mean_taxa + intercp, my_sigma, observed=y)
@@ -981,7 +981,6 @@ def infer_mkspikeseq_by_did(did, debug=False, progressbar=False, save_trace=True
             )
         except Exception as e:
             print(e)
-
 
         # for cur_trace_number, trace in enumerate(regs):
         #     trace["posterior"].to_netcdf(

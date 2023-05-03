@@ -7,17 +7,13 @@ from mtist import mtist_utils as mu
 
 
 class ASSEMBLE_MTIST_DEFAULTS:
+
     RANDOM_SEED = 89237560
     seq_depth_th = 0.01
-    # RNG = np.random.default_rng(RANDOM_SEED)
 
-    N_TIMESERIES_PARAMS = [5, 10, 50]
-    SAMPLING_FREQ_PARAMS = [5, 10, 15]
+    N_TIMESERIES_PARAMS = [10, 25, 50]
+    SAMPLING_FREQ_PARAMS = [5, 15]
     SAMPLING_SCHEME_PARAMS = ["even", "random", "seq"]
-
-
-### GLOBAL VARIABLES ###
-# RNG = ASSEMBLE_MTIST_DEFAULTS.RNG
 
 
 def gen_even_idx(sf):
@@ -50,6 +46,7 @@ def gen_random_idx(sf, rng):
 
 
 def implement_low_seq_depth():
+    """This is no longer used in MTIST"""
 
     n_datasets = mu.calculate_n_datasets()
 
@@ -105,7 +102,7 @@ def generate_metadata():
         df = pd.read_csv(fn).drop(columns="Unnamed: 0")
 
         # Gather metadata
-        sd = df["seq_depth"].unique()[0]
+        # sd = df["seq_depth"].unique()[0]
         did = df["did"].unique()[0]
         n_species = df["n_species"].unique()[0]
         noise = df["noise"].unique()[0]
@@ -128,7 +125,7 @@ def generate_metadata():
 
         # Check to make sure these "unique" arrays are all len() == 1
         to_check = [
-            "seq_depth",
+            # "seq_depth",
             "did",
             "n_species",
             "noise",
@@ -141,7 +138,15 @@ def generate_metadata():
 
         # Create the next meta row
         cur_meta_row = pd.DataFrame(
-            [did, n_species, gt, noise, n_timeseries, n_timepoints, ss, sd],
+            [
+                did,
+                n_species,
+                gt,
+                noise,
+                n_timeseries,
+                n_timepoints,
+                ss,
+            ],
             index=[
                 "did",
                 "n_species",
@@ -150,21 +155,16 @@ def generate_metadata():
                 "n_timeseries",
                 "n_timepoints",
                 "sampling_scheme",
-                "seq_depth",
             ],
         ).T
 
         # Combine
         meta = pd.concat((meta, cur_meta_row))
 
-    # meta = meta.set_index("did").sort_index()
-
     return meta
 
 
 def assemble_mtist():
-
-    # mdataset_fps = glob.glob(os.path.join(mu.GLOBALS.MASTER_DATASET_DIR, "master_dataset_*.csv"))
 
     ## Gather what master datasets/conditions will go into each mtist dataset ##
     master_meta = pd.read_csv(
@@ -180,7 +180,6 @@ def assemble_mtist():
 
     # Distribute the n_timeseries throughout
     # the noise/ground truth combinations
-    # n_timeseries_params = [5, 10, 50]
     n_timeseries_params = ASSEMBLE_MTIST_DEFAULTS.N_TIMESERIES_PARAMS
 
     name_noise_nts_dict = {}
@@ -195,8 +194,6 @@ def assemble_mtist():
             ]
 
     # Finally, duplicate out the conditions for all parameters
-    # sampling_scheme_params = ["even", "random", "seq"]
-    # sampling_freq_params = [5, 10, 15]
     sampling_freq_params = ASSEMBLE_MTIST_DEFAULTS.SAMPLING_FREQ_PARAMS
     sampling_scheme_params = ASSEMBLE_MTIST_DEFAULTS.SAMPLING_SCHEME_PARAMS
 
@@ -258,7 +255,10 @@ def assemble_mtist():
             df_sampled = pd.concat((df_sampled, subset.iloc[idx]))
 
         df_sampled = df_sampled.reset_index(drop=True).assign(
-            did=did, seq_depth="high", n_timeseries=nts, n_timepoints=sf, sampling_scheme=ss
+            did=did,
+            n_timeseries=nts,
+            n_timepoints=sf,
+            sampling_scheme=ss,
         )
 
         df_sampled.to_csv(os.path.join(mu.GLOBALS.MTIST_DATASET_DIR, f"dataset_{did}.csv"))
@@ -266,7 +266,8 @@ def assemble_mtist():
         did = did + 1
 
     ## IMPLEMENT LOW-SEQ-DEPTH ##
-    implement_low_seq_depth()
+    # implement_low_seq_depth()
+    # Low sequencing depth is no longer used in MTIST.
 
     ## GENERATE METADATA ##
     meta = generate_metadata()

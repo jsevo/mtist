@@ -3,6 +3,9 @@ from collections.abc import Iterable
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from mtist import mtist_utils as mu
+import math
+
 
 def easy_subplots(ncols=1, nrows=1, base_figsize=None, **kwargs):
 
@@ -13,7 +16,7 @@ def easy_subplots(ncols=1, nrows=1, base_figsize=None, **kwargs):
         ncols=ncols,
         nrows=nrows,
         figsize=(base_figsize[0] * ncols, base_figsize[1] * nrows),
-        **kwargs
+        **kwargs,
     )
 
     # Lazy way of doing this
@@ -49,7 +52,8 @@ def savefig(fig, filename, ft=None):
 
 
 def score_heatmap(meta, df_es_scores, plot_floored=True, plot_low_seq_depth=True, **kwargs):
-    """meta should have index of did"""
+    """meta should have index of did
+    No longer works now that sep-depth removed"""
 
     # Get heatmaps across seq_depth low, high and raw, floored scores
 
@@ -241,3 +245,47 @@ def score_heatmap_expanded(meta, df_es_scores, plot_floored=True, return_ax=Fals
         return fig, axes
     else:
         return fig
+
+
+def plot_dataset(did):
+
+    full_df, _, _, meta_spec = mu.load_dataset_by_did(did)
+
+    n_species = meta_spec["n_species"].unique()[0]
+    n_timeseries = meta_spec["n_timeseries"].unique()[0]
+    timeseries_ids = meta_spec["timeseries_id"].unique()
+
+    species_cols = full_df.columns[full_df.columns.str.contains("species_")]
+
+    if n_timeseries % 2 == 0:
+        nrows = int(n_timeseries / 2)
+        ncols = 2
+    else:
+        ncols = 4
+        nrows = math.floor(n_timeseries / 3)
+
+    fig, axes = easy_subplots(
+        ncols=ncols, nrows=nrows, base_figsize=(3, 3), sharex=True, sharey=True
+    )
+
+    for i in range(n_timeseries):
+        ax = axes[i]
+        cur_timeseries_id = timeseries_ids[i]
+
+        subset = full_df.query("timeseries_id == @cur_timeseries_id")
+
+        cur_X = subset[species_cols].values
+        cur_time = subset.iloc[:, 0].values
+
+        [ax.scatter(cur_time, cur_X[:, i]) for i in range(n_species)]
+        [ax.plot(cur_time, cur_X[:, i], alpha=0.6) for i in range(n_species)]
+        ax.set_title(f"Timeseries ID: {cur_timeseries_id}")
+
+        ax.set_xlabel("time")
+        ax.set_ylabel("abundance")
+
+    fig.suptitle(f"MTIST Dataset did={did}")
+    plt.tight_layout()
+    despine()
+
+    return fig, axes

@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 
 from mtist.graphing_utils import despine, easy_subplots, savefig
-
-# from mtist.mtist_utils import mu.GLOBALS, mu.load_ground_truths, mu.simulate
 from mtist import mtist_utils as mu
 
 
@@ -56,7 +54,7 @@ class MASTER_DATASET_DEFAULTS:
 
     # fmt: on
 
-    NOISE_SCALES = [0.01, 0.05, 0.10]
+    NOISE_SCALES = [0.01, 0.10]
 
 
 def generate_mtist_master_datasets(save_datasets=True, save_example_figures=True):
@@ -79,16 +77,6 @@ def generate_mtist_master_datasets(save_datasets=True, save_example_figures=True
     aijs, grs = mu.load_ground_truths(mu.GLOBALS.GT_DIR)
 
     gt_names = mu.GLOBALS.GT_NAMES
-
-    # [
-    # "3_sp_gt_1",
-    # "3_sp_gt_2",
-    # "3_sp_gt_3",
-    # "10_sp_gt_1",
-    # "10_sp_gt_2",
-    # "10_sp_gt_3",
-    # "100_sp_gt",
-    # ]
 
     ### DO THE SIMULATIONS ###
     # Index then by name, seed, noise
@@ -330,16 +318,6 @@ def generate_mtist_master_datasets_selective(
     # Load ground truths
     aijs, grs = mu.load_ground_truths(mu.GLOBALS.GT_DIR)
     # gt_names = mu.GOLBALS.GT_NAMES # this gets overwritten by "ecosystems" and is unneeded
-
-    # gt_names = [
-    #     "3_sp_gt_1",
-    #     "3_sp_gt_2",
-    #     "3_sp_gt_3",
-    #     "10_sp_gt_1",
-    #     "10_sp_gt_2",
-    #     "10_sp_gt_3",
-    #     "100_sp_gt",
-    # ]
 
     # Only use a certain selection of ground truths
     aijs_selective = {each: aijs[each] for each in ecosystems}

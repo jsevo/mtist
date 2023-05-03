@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 
 from mtist import lvsimulator
-
 from mtist import assemble_mtist as am
 from mtist import master_dataset_generation as mdg
 
@@ -127,9 +126,20 @@ class GLOBALS:
         "3_sp_gt_1",
         "3_sp_gt_2",
         "3_sp_gt_3",
+        "3_sp_gt_4",
+        "3_sp_gt_5",
+        "3_sp_gt_6",
+        "3_sp_gt_7",
+        "3_sp_gt_8",
         "10_sp_gt_1",
         "10_sp_gt_2",
         "10_sp_gt_3",
+        "10_sp_gt_4",
+        "10_sp_gt_5",
+        "10_sp_gt_6",
+        "10_sp_gt_7",
+        "10_sp_gt_8",
+        "10_sp_gt_9",
         "100_sp_gt",
     ]
 
@@ -233,6 +243,36 @@ def load_ground_truths(path=None):
 def load_dataset(csv):
     """from csv filepath to full_df, X"""
     full_df = pd.read_csv(csv).drop(columns="Unnamed: 0")
+
+    species_cols = full_df.columns[full_df.columns.str.contains("species_")]
+    X = full_df[species_cols].values
+
+    time = full_df.iloc[:, 0].values
+
+    # meta specific for this dataset
+    meta_spec = full_df.drop(columns=["time"] + species_cols.to_list())
+
+    return full_df, time, X, meta_spec
+
+
+def load_dataset_by_did(did):
+    """Loads the MTIST dataset corresponding to the did provided
+
+    Args:
+        did (int/str): did of the dataset desired to load
+
+    Returns:
+
+    tuple of ...
+
+        (full_df: Pandas dataframe of the entire MTIST dataset,
+        time: NumPy array of the time column from full_df,
+        X: the species abundances array found within full_df,
+        meta_spec: the metadata from the full_df)
+    """
+    full_df = pd.read_csv(os.path.join(GLOBALS.MTIST_DATASET_DIR, f"dataset_{did}.csv")).drop(
+        columns="Unnamed: 0"
+    )
 
     species_cols = full_df.columns[full_df.columns.str.contains("species_")]
     X = full_df[species_cols].values
@@ -358,7 +398,7 @@ def calculate_n_datasets():
         n_timepoints=len(am.ASSEMBLE_MTIST_DEFAULTS.SAMPLING_FREQ_PARAMS),
         n_noises=len(mdg.MASTER_DATASET_DEFAULTS.NOISE_SCALES),
         n_ecosystems=len(GLOBALS.GT_NAMES),
-        n_seq_depths=2,  # Hard coded,
+        n_seq_depths=1,  # Hard coded - as of 3/26/22, seq_depth has been removed
         n_sampling_schemes=len(am.ASSEMBLE_MTIST_DEFAULTS.SAMPLING_SCHEME_PARAMS),
     )
     n_datasets = reduce(

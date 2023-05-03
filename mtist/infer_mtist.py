@@ -2,7 +2,6 @@ import os
 
 import numpy as np
 import pandas as pd
-import pymc3 as pm
 import statsmodels.api as sm
 from sklearn import linear_model
 from sklearn.linear_model import LinearRegression
@@ -456,7 +455,6 @@ def infer_from_did_lasso_cv(did, debug=False):
 
             lassocv = linear_model.LassoCV(
                 cv=5,
-                normalize=False,
                 fit_intercept=True,
                 max_iter=10 ** 7,
             )
@@ -613,7 +611,6 @@ def infer_from_did_ridge_cv(did, debug=False):
 
             ridgecv = linear_model.RidgeCV(
                 cv=5,
-                normalize=False,
                 fit_intercept=True,
             )
 
@@ -770,7 +767,6 @@ def infer_from_did_elasticnet_cv(did, debug=False):
                 l1_ratio=0.5,
                 eps=1e-3,
                 cv=5,
-                normalize=False,
                 fit_intercept=True,
                 max_iter=10 ** 7,
             )
@@ -807,6 +803,7 @@ def infer_from_did_elasticnet_cv(did, debug=False):
 
 
 def run_mkspikeseq(X, y, progressbar=False, zellner=False):
+    import pymc3 as pm
 
     """regresses X on y using MKSpikeSeq, returns trace"""
 
@@ -866,8 +863,8 @@ def run_mkspikeseq(X, y, progressbar=False, zellner=False):
         trace = pm.sample(
             # draws=15000,
             # tune=3000,
-            draws=10000,
-            tune=2500,
+            draws=5000,
+            tune=1000,
             init="adapt_diag",
             cores=-1,
             return_inferencedata=True,
@@ -948,53 +945,90 @@ def infer_mkspikeseq_by_did(did, debug=False, progressbar=False, save_trace=True
         except Exception as e:
             print(e)
 
-        for cur_trace_number, trace in enumerate(regs):
-            trace["posterior"].to_netcdf(
+        try:
+
+            import pickle
+
+            def save_pickle(thing, fn):
+                with open("{}.pickle".format(fn), "wb") as handle:
+                    pickle.dump(thing, handle, protocol=3)
+
+            save_pickle(
+                regs,
                 os.path.join(
                     mu.GLOBALS.MTIST_DATASET_DIR,
                     f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inference_result",
-                    f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}trace_{cur_trace_number}_for_{did}.nc",
+                    f"regs_{did}",
                 ),
             )
 
-            trace["sample_stats"].to_netcdf(
+            save_pickle(
+                slopes,
                 os.path.join(
                     mu.GLOBALS.MTIST_DATASET_DIR,
                     f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inference_result",
-                    f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}sample_stats_{cur_trace_number}_for_{did}.nc",
+                    f"slopes_{did}",
                 ),
             )
 
-        np.savetxt(
-            os.path.join(
-                mu.GLOBALS.MTIST_DATASET_DIR,
-                f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inference_result",
-                f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inferred_for_{did}.csv",
-            ),
-            slopes,
-            delimiter=",",
-        )
-
-        np.savetxt(
-            os.path.join(
-                mu.GLOBALS.MTIST_DATASET_DIR,
-                f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inference_result",
-                f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inferred_for_{did}_cutoff.csv",
-            ),
-            cutoff_slopes,
-            delimiter=",",
-        )
+            save_pickle(
+                intercepts,
+                os.path.join(
+                    mu.GLOBALS.MTIST_DATASET_DIR,
+                    f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inference_result",
+                    f"intercepts_{did}",
+                ),
+            )
+        except Exception as e:
+            print(e)
 
 
-        np.savetxt(
-            os.path.join(
-                mu.GLOBALS.MTIST_DATASET_DIR,
-                f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inference_result",
-                f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}growth_rates_for_{did}.csv",
-            ),
-            intercepts,
-            delimiter=",",
-        )
+        # for cur_trace_number, trace in enumerate(regs):
+        #     trace["posterior"].to_netcdf(
+        #         os.path.join(
+        #             mu.GLOBALS.MTIST_DATASET_DIR,
+        #             f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inference_result",
+        #             f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}trace_{cur_trace_number}_for_{did}.nc",
+        #         ),
+        #     )
+
+        #     trace["sample_stats"].to_netcdf(
+        #         os.path.join(
+        #             mu.GLOBALS.MTIST_DATASET_DIR,
+        #             f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inference_result",
+        #             f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}sample_stats_{cur_trace_number}_for_{did}.nc",
+        #         ),
+        #     )
+
+        # np.savetxt(
+        #     os.path.join(
+        #         mu.GLOBALS.MTIST_DATASET_DIR,
+        #         f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inference_result",
+        #         f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inferred_for_{did}.csv",
+        #     ),
+        #     slopes,
+        #     delimiter=",",
+        # )
+
+        # np.savetxt(
+        #     os.path.join(
+        #         mu.GLOBALS.MTIST_DATASET_DIR,
+        #         f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inference_result",
+        #         f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inferred_for_{did}_cutoff.csv",
+        #     ),
+        #     cutoff_slopes,
+        #     delimiter=",",
+        # )
+
+        # np.savetxt(
+        #     os.path.join(
+        #         mu.GLOBALS.MTIST_DATASET_DIR,
+        #         f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}inference_result",
+        #         f"{INFERENCE_DEFAULTS.INFERENCE_PREFIX}growth_rates_for_{did}.csv",
+        #     ),
+        #     intercepts,
+        #     delimiter=",",
+        # )
 
     if debug:
         return (slopes, intercepts, regs)
@@ -1055,17 +1089,14 @@ def infer_and_score_all(save_inference=True, save_scores=True):
 
     # Begin inference
 
-    # fns = glob.glob(os.path.join(mu.GLOBALS.MTIST_DATASET_DIR, "dataset_*"))
-    # fns = [os.path.join(mu.GLOBALS.MTIST_DATASET_DIR, f"dataset_{i}.csv") for i in range(1134)]
-
     n_datasets = mu.calculate_n_datasets()
     fns = [
         os.path.join(mu.GLOBALS.MTIST_DATASET_DIR, f"dataset_{i}.csv") for i in range(n_datasets)
     ]
 
-    th = INFERENCE_DEFAULTS.inference_threshold  # for the floored_scores
+    # th = INFERENCE_DEFAULTS.inference_threshold  # for the floored_scores
     raw_scores = {}
-    floored_scores = {}
+    # floored_scores = {}
     inferred_aijs = {}
 
     for fn in fns:
@@ -1082,18 +1113,25 @@ def infer_and_score_all(save_inference=True, save_scores=True):
         es_score = calculate_es_score(true_aij, inferred_aij)
 
         # Calculate floored ES score
-        floored_inferred_aij = inferred_aij.copy()  # copy aij
-        mask = np.abs(floored_inferred_aij) < th  # determine where to floor
-        floored_inferred_aij[mask] = 0  # floor below the th
-        es_score_floored = calculate_es_score(true_aij, floored_inferred_aij)
+        # floored_inferred_aij = inferred_aij.copy()  # copy aij
+        # mask = np.abs(floored_inferred_aij) < th  # determine where to floor
+        # floored_inferred_aij[mask] = 0  # floor below the th
+        # es_score_floored = calculate_es_score(true_aij, floored_inferred_aij)
 
         # Save the scores
         raw_scores[did] = es_score
-        floored_scores[did] = es_score_floored
+        # floored_scores[did] = es_score_floored
         inferred_aijs[did] = inferred_aij.copy()
 
     df_es_scores = pd.DataFrame(
-        [raw_scores, floored_scores], index=["raw", "floored"]
+        [
+            raw_scores,
+            # floored_scores
+        ],
+        index=[
+            "raw",
+            # "floored"
+        ],
     ).T.sort_index()
 
     if save_inference:
@@ -1143,16 +1181,12 @@ def infer_and_save_portion(dids, save_inference=True, save_scores=True):
 
     # Begin inference
 
-    # fns = glob.glob(os.path.join(mu.GLOBALS.MTIST_DATASET_DIR, "dataset_*"))
-    # fns = [os.path.join(mu.GLOBALS.MTIST_DATASET_DIR, f"dataset_{i}.csv") for i in range(1134)]
-
-    # n_datasets = mu.calculate_n_datasets()
     fns = [os.path.join(mu.GLOBALS.MTIST_DATASET_DIR, f"dataset_{i}.csv") for i in dids]
 
-    th = INFERENCE_DEFAULTS.inference_threshold  # for the floored_scores
+    # th = INFERENCE_DEFAULTS.inference_threshold  # for the floored_scores
 
     raw_scores = {}
-    floored_scores = {}
+    # floored_scores = {}
     inferred_aijs = {}
 
     for fn in fns:
@@ -1169,20 +1203,27 @@ def infer_and_save_portion(dids, save_inference=True, save_scores=True):
         es_score = calculate_es_score(true_aij, inferred_aij)
 
         # Calculate floored ES score
-        floored_inferred_aij = inferred_aij.copy()  # copy aij
-        mask = np.abs(floored_inferred_aij) < th  # determine where to floor
-        floored_inferred_aij[mask] = 0  # floor below the th
-        es_score_floored = calculate_es_score(true_aij, floored_inferred_aij)
+        # floored_inferred_aij = inferred_aij.copy()  # copy aij
+        # mask = np.abs(floored_inferred_aij) < th  # determine where to floor
+        # floored_inferred_aij[mask] = 0  # floor below the th
+        # es_score_floored = calculate_es_score(true_aij, floored_inferred_aij)
 
         # Save the scores
         raw_scores[did] = es_score
-        floored_scores[did] = es_score_floored
+        # floored_scores[did] = es_score_floored
         inferred_aijs[did] = inferred_aij.copy()
 
         # test saving per did
 
     df_es_scores = pd.DataFrame(
-        [raw_scores, floored_scores], index=["raw", "floored"]
+        [
+            raw_scores,
+            #  floored_scores
+        ],
+        index=[
+            "raw",
+            #   "floored"
+        ],
     ).T.sort_index()
 
     if save_inference:
@@ -1233,4 +1274,4 @@ class INFERENCE_DEFAULTS:
     INFERENCE_FUNCTION = infer_from_did
     INFERENCE_PREFIX = ""
 
-    inference_threshold = 1 / 3
+    # inference_threshold = 1 / 3

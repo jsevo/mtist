@@ -6,10 +6,13 @@ MTIST is a standardized test dataset designed to benchmark microbial ecosystem i
 # Installation
 Install with `pip` in "editable" mode.
 
+***MTIST has only been tested using Python 3.8. If an unknown error occurs, try reverting to Python 3.8.***
+
 1. Clone repo
 2. Navigate to folder
 3. Create virtual environment
 4. Install in editable mode using `pip install -e .`
+5. Optional - Make sure all required packages are installed using `pip install -r requirements.txt`.
 
 Project will soon be uploaded to PyPi and BioConda.
 

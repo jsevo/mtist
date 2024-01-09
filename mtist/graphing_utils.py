@@ -8,7 +8,6 @@ import math
 
 
 def easy_subplots(ncols=1, nrows=1, base_figsize=None, **kwargs):
-
     if base_figsize is None:
         base_figsize = (8, 5)
 
@@ -33,7 +32,6 @@ def despine(fig=None, axes=None):
         sns.despine(trim=True, offset=0.5, fig=fig)
 
     elif axes is not None:
-
         if not isinstance(axes, Iterable):  # to generalize to a single ax
             axes = [axes]
 
@@ -51,7 +49,9 @@ def savefig(fig, filename, ft=None):
     fig.savefig("{}.{}".format(filename, ft), dpi=300, bbox_inches="tight")
 
 
-def score_heatmap(meta, df_es_scores, plot_floored=True, plot_low_seq_depth=True, **kwargs):
+def score_heatmap(
+    meta, df_es_scores, plot_floored=True, plot_low_seq_depth=True, **kwargs
+):
     """meta should have index of did
     No longer works now that sep-depth removed"""
 
@@ -60,7 +60,9 @@ def score_heatmap(meta, df_es_scores, plot_floored=True, plot_low_seq_depth=True
     hm_high_raw = (
         df_es_scores.join(meta)
         .query('seq_depth == "high"')
-        .groupby(["n_species", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"])
+        .groupby(
+            ["n_species", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"]
+        )
         .median()
         .pivot_table(
             index=["noise", "sampling_scheme", "n_timepoints"],
@@ -72,7 +74,9 @@ def score_heatmap(meta, df_es_scores, plot_floored=True, plot_low_seq_depth=True
     hm_low_raw = (
         df_es_scores.join(meta)
         .query('seq_depth == "low"')
-        .groupby(["n_species", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"])
+        .groupby(
+            ["n_species", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"]
+        )
         .median()
         .pivot_table(
             index=["noise", "sampling_scheme", "n_timepoints"],
@@ -84,7 +88,9 @@ def score_heatmap(meta, df_es_scores, plot_floored=True, plot_low_seq_depth=True
     hm_high_floored = (
         df_es_scores.join(meta)
         .query('seq_depth == "high"')
-        .groupby(["n_species", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"])
+        .groupby(
+            ["n_species", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"]
+        )
         .median()
         .pivot_table(
             index=["noise", "sampling_scheme", "n_timepoints"],
@@ -96,7 +102,9 @@ def score_heatmap(meta, df_es_scores, plot_floored=True, plot_low_seq_depth=True
     hm_low_floored = (
         df_es_scores.join(meta)
         .query('seq_depth == "low"')
-        .groupby(["n_species", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"])
+        .groupby(
+            ["n_species", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"]
+        )
         .median()
         .pivot_table(
             index=["noise", "sampling_scheme", "n_timepoints"],
@@ -148,7 +156,9 @@ def score_heatmap(meta, df_es_scores, plot_floored=True, plot_low_seq_depth=True
     return fig
 
 
-def score_heatmap_expanded(meta, df_es_scores, plot_floored=True, return_ax=False, **kwargs):
+def score_heatmap_expanded(
+    meta, df_es_scores, plot_floored=True, return_ax=False, **kwargs
+):
     """meta should have index of did"""
 
     # Get heatmaps across seq_depth low, high and raw, floored scores
@@ -156,7 +166,9 @@ def score_heatmap_expanded(meta, df_es_scores, plot_floored=True, return_ax=Fals
     hm_high_raw = (
         df_es_scores.join(meta)
         .query('seq_depth == "high"')
-        .groupby(["ground_truth", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"])
+        .groupby(
+            ["ground_truth", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"]
+        )
         .median()
         .pivot_table(
             index=["noise", "sampling_scheme", "n_timepoints"],
@@ -168,7 +180,9 @@ def score_heatmap_expanded(meta, df_es_scores, plot_floored=True, return_ax=Fals
     hm_low_raw = (
         df_es_scores.join(meta)
         .query('seq_depth == "low"')
-        .groupby(["ground_truth", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"])
+        .groupby(
+            ["ground_truth", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"]
+        )
         .median()
         .pivot_table(
             index=["noise", "sampling_scheme", "n_timepoints"],
@@ -180,7 +194,9 @@ def score_heatmap_expanded(meta, df_es_scores, plot_floored=True, return_ax=Fals
     hm_high_floored = (
         df_es_scores.join(meta)
         .query('seq_depth == "high"')
-        .groupby(["ground_truth", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"])
+        .groupby(
+            ["ground_truth", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"]
+        )
         .median()
         .pivot_table(
             index=["noise", "sampling_scheme", "n_timepoints"],
@@ -192,7 +208,9 @@ def score_heatmap_expanded(meta, df_es_scores, plot_floored=True, return_ax=Fals
     hm_low_floored = (
         df_es_scores.join(meta)
         .query('seq_depth == "low"')
-        .groupby(["ground_truth", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"])
+        .groupby(
+            ["ground_truth", "noise", "n_timeseries", "sampling_scheme", "n_timepoints"]
+        )
         .median()
         .pivot_table(
             index=["noise", "sampling_scheme", "n_timepoints"],
@@ -248,7 +266,6 @@ def score_heatmap_expanded(meta, df_es_scores, plot_floored=True, return_ax=Fals
 
 
 def plot_dataset(did):
-
     full_df, _, _, meta_spec = mu.load_dataset_by_did(did)
 
     n_species = meta_spec["n_species"].unique()[0]
@@ -289,3 +306,18 @@ def plot_dataset(did):
     despine()
 
     return fig, axes
+
+
+def remove_all_ticks(ax):
+    ax.tick_params(
+        axis="both",
+        which="both",
+        labelbottom=False,
+        labeltop=False,
+        labelleft=False,
+        labelright=False,
+        bottom=False,
+        top=False,
+        left=False,
+        right=False,
+    )

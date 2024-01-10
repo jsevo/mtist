@@ -456,7 +456,7 @@ def infer_from_did_lasso_cv(did, debug=False):
             lassocv = linear_model.LassoCV(
                 cv=5,
                 fit_intercept=True,
-                max_iter=10**7,
+                max_iter=10 ** 7,
             )
 
             reg = lassocv.fit(X_train, y_train)
@@ -768,7 +768,7 @@ def infer_from_did_elasticnet_cv(did, debug=False):
                 eps=1e-3,
                 cv=5,
                 fit_intercept=True,
-                max_iter=10**7,
+                max_iter=10 ** 7,
             )
 
             reg = enet.fit(X_train, y_train)
@@ -802,7 +802,7 @@ def infer_from_did_elasticnet_cv(did, debug=False):
         return inferred
 
 
-def run_mkspikeseq(X, y, progressbar=False, zellner=False):
+def run_mkspikeseq(X, y, progressbar=False, zellner=False, draws=5000, tune=1000):
     import pymc3 as pm
 
     """regresses X on y using MKSpikeSeq, returns trace"""
@@ -855,7 +855,7 @@ def run_mkspikeseq(X, y, progressbar=False, zellner=False):
         # mean_drugs = pm.math.dot(X_drugs, xi_drugs * beta_drugs)
 
         my_sigma = pm.HalfNormal("my_sigma", 10)
-        intercp = pm.Bound(pm.Normal, lower=0.0)("intercp", mu=1.0, tau=(init_r_std**2) * 1e2)
+        intercp = pm.Bound(pm.Normal, lower=0.0)("intercp", mu=1.0, tau=(init_r_std ** 2) * 1e2)
 
         # my_var = pm.Normal("my_var", mean_drugs + mean_taxa + intercp, my_sigma, observed=y)
         my_var = pm.Normal("my_var", mean_taxa + intercp, my_sigma, observed=y)
@@ -863,8 +863,10 @@ def run_mkspikeseq(X, y, progressbar=False, zellner=False):
         trace = pm.sample(
             # draws=15000,
             # tune=3000,
-            draws=5000,
-            tune=1000,
+            # draws=5000,
+            # tune=1000,
+            draws=draws,
+            tune=tune,
             init="adapt_diag",
             cores=-1,
             return_inferencedata=True,
@@ -874,7 +876,9 @@ def run_mkspikeseq(X, y, progressbar=False, zellner=False):
     return trace
 
 
-def infer_mkspikeseq_by_did(did, debug=False, progressbar=False, save_trace=True):
+def infer_mkspikeseq_by_did(
+    did, debug=False, progressbar=False, save_trace=True, draws=5000, tune=1000
+):
 
     # Zero cutoff factor
     cutoff = 0.01 / 19.161194626965624
@@ -911,7 +915,9 @@ def infer_mkspikeseq_by_did(did, debug=False, progressbar=False, save_trace=True
         # Otherwise, regress.
         else:
             try:
-                trace = run_mkspikeseq(cur_gmeans, cur_dlogydt, progressbar=progressbar)
+                trace = run_mkspikeseq(
+                    cur_gmeans, cur_dlogydt, progressbar=progressbar, draws=draws, tune=tune
+                )
 
                 cur_slopes = (
                     trace["posterior"]["beta_taxa"].values.reshape(-1, n_species).mean(axis=0)
@@ -1051,6 +1057,9 @@ def calculate_es_score(true_aij, inferred_aij) -> float:
 
     truth = pd.DataFrame(true_aij).copy()
     inferred = pd.DataFrame(inferred_aij).copy()
+
+    if truth.shape != inferred.shape:
+        raise ValueError("truth and inferred must be the same shape")
 
     # consider inferred coefficients
     mask = inferred != 0

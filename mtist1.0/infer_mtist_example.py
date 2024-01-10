@@ -9,7 +9,7 @@ from mtist import infer_mtist as im
 from matplotlib import pyplot as plt
 
 ################################
-# INFER 3-SPECIES MTIST 4 WAYS #
+# INFER MTIST 4 WAYS #
 ################################
 
 inference_names = [
@@ -29,7 +29,9 @@ inference_fxn_handles = [
 ]
 
 
-for inference_type, prefix, handle in zip(inference_names, prefixes, inference_fxn_handles):
+for inference_type, prefix, handle in zip(
+    inference_names, prefixes, inference_fxn_handles
+):
     print(inference_type)
     im.INFERENCE_DEFAULTS.INFERENCE_PREFIX = prefix
     im.INFERENCE_DEFAULTS.INFERENCE_FUNCTION = handle

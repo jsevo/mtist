@@ -7,3 +7,4 @@ pandas==1.2.3
 seaborn==0.11.1
 xarray==0.18.2
 statsmodels==0.12.2
+tqdm==4.66.1

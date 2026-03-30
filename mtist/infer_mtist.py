@@ -1042,45 +1042,19 @@ def infer_mkspikeseq_by_did(
 
 
 def calculate_es_score(true_aij, inferred_aij) -> float:
-    """GRANT'S edited version to calculate ED score
+    """Calculate the ecological direction (ES) score.
 
-    Calculate the ecological direction (EDₙ) score (n := number of species in ecosystem).
+    Delegates to the canonical implementation in mtist_utils.
 
     Parameters
     ===============
-    truth: ndarray(axis0=species_names, axis1=species_names), the ecosystem coefficient matrix used to generate data
-    inferred: ndarray(axis0=species_names, axis1=species_names), the inferred ecosystem coefficient matrix
+    true_aij: ndarray, the ecosystem coefficient matrix used to generate data
+    inferred_aij: ndarray, the inferred ecosystem coefficient matrix
     Returns
     ===============
     ES_score: float
     """
-
-    truth = true_aij.copy()
-    inferred = inferred_aij.copy()
-
-    if truth.shape != inferred.shape:
-        raise ValueError("truth and inferred must be the same shape")
-
-    # consider inferred coefficients
-    mask = inferred != 0
-
-    # compare sign: agreement when == -2 or +2, disagreement when 0
-    nonzero_sign = np.sign(inferred)[mask] + np.sign(truth)[mask]
-    corr_sign = (np.abs(nonzero_sign) == 2).sum()
-    opposite_sign = (np.abs(nonzero_sign) == 0).sum()
-
-    # combine
-    unscaled_score = corr_sign - opposite_sign
-
-    # scale by theoretical extrema
-    truth_nz_counts = (truth != 0).sum()
-    
-    theoretical_min = -truth_nz_counts
-    theoretical_max = truth_nz_counts
-
-    ES_score = (unscaled_score - theoretical_min) / (theoretical_max - theoretical_min)
-
-    return ES_score
+    return mu.calculate_es_score(true_aij, inferred_aij)
 
 
 def infer_and_score_all(save_inference=True, save_scores=True):

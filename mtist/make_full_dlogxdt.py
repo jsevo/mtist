@@ -50,6 +50,6 @@ def make_full_dlogxdt(df, key, timekey, columns, specieskey="species"):
         geomm = geomm.unstack().T.reset_index().rename(columns={"index": "timeinterval"})
         _dlogxdt = pd.merge(tmp, geomm, how="left", on="timeinterval")
         # append
-        full_dlogxdt = full_dlogxdt.append(_dlogxdt, ignore_index=True)
+        full_dlogxdt = pd.concat((full_dlogxdt, _dlogxdt), ignore_index=True)
     full_dlogxdt = full_dlogxdt.replace([np.inf, -np.inf], np.nan).dropna(how="any")
     return full_dlogxdt

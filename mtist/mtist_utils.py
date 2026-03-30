@@ -350,33 +350,32 @@ def calculate_es_score(true_aij, inferred_aij) -> float:
 
     Parameters
     ===============
-    truth: pandas.DataFrame(index=species_names, columns=species_names), the ecosystem coefficient matrix used to generate data
-    inferred: pandas.DataFrame(index=species_names, columns=species_names), the inferred ecosystem coefficient matrix
+    true_aij: array-like, the ecosystem coefficient matrix used to generate data
+    inferred_aij: array-like, the inferred ecosystem coefficient matrix
     Returns
     ===============
     ES_score: float
     """
 
-    truth = pd.DataFrame(true_aij).copy()
-    inferred = pd.DataFrame(inferred_aij).copy()
+    truth = np.asarray(true_aij).copy()
+    inferred = np.asarray(inferred_aij).copy()
+
+    if truth.shape != inferred.shape:
+        raise ValueError("truth and inferred must be the same shape")
 
     # consider inferred coefficients
     mask = inferred != 0
 
     # compare sign: agreement when == -2 or +2, disagreement when 0
     nonzero_sign = np.sign(inferred)[mask] + np.sign(truth)[mask]
-    corr_sign = (np.abs(nonzero_sign) == 2).sum().sum()
-    opposite_sign = (np.abs(nonzero_sign) == 0).sum().sum()
-
-    # count incorrect non-zero coefficients
-    wrong_nz = (truth[mask] == 0).sum().sum()
+    corr_sign = (np.abs(nonzero_sign) == 2).sum()
+    opposite_sign = (np.abs(nonzero_sign) == 0).sum()
 
     # combine
     unscaled_score = corr_sign - opposite_sign
 
     # scale by theoretical extrema
-    truth_nz_counts = (truth != 0).sum().sum()
-    truth_z_counts = len(truth.index) ** 2 - truth_nz_counts
+    truth_nz_counts = (truth != 0).sum()
     theoretical_min = -truth_nz_counts
     theoretical_max = truth_nz_counts
 

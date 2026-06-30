@@ -343,15 +343,26 @@ def simulate(aij, gr, seed, noise, tend, dt, sample_freq):
     return t, y
 
 
-def calculate_es_score(true_aij, inferred_aij) -> float:
-    """GRANT'S edited version to calculate ED score
+def _ground_truth_order_perm(n_species):
+    """Permutation aligning a matrix in the simulator's species order to the
+    ground truth's declared species order.
+    """
+    if n_species == 100:
+        names = list(GLOBALS.names_100_sp)
+    else:
+        names = [f"species_{i}" for i in range(n_species)]
+    order = sorted(names)
+    return [order.index(name) for name in names]
 
-    Calculate the ecological direction (EDₙ) score (n := number of species in ecosystem).
+
+def calculate_es_score(true_aij, inferred_aij) -> float:
+    """GRANT'S edited version to calculate ES score
 
     Parameters
     ===============
     true_aij: array-like, the ecosystem coefficient matrix used to generate data
     inferred_aij: array-like, the inferred ecosystem coefficient matrix
+
     Returns
     ===============
     ES_score: float
@@ -362,6 +373,12 @@ def calculate_es_score(true_aij, inferred_aij) -> float:
 
     if truth.shape != inferred.shape:
         raise ValueError("truth and inferred must be the same shape")
+
+    # Align the inferred matrix (simulator/sorted species order) to the ground
+    # truth's declared species order. Identity for 3- and 10-species ecosystems;
+    # a non-trivial reordering for the 100-species ecosystem.
+    perm = _ground_truth_order_perm(inferred.shape[0])
+    inferred = inferred[np.ix_(perm, perm)]
 
     # consider inferred coefficients
     mask = inferred != 0

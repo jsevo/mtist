@@ -407,5 +407,64 @@ def calculate_n_datasets():
     return n_datasets
 
 
+def apply_measurement_noise(X, sigma, random_seed=0):
+    """Apply multiplicative log-normal measurement noise to abundance data.
+
+    Simulates combined assay/process noise (e.g. from qPCR, sequencing, spike-in
+    quantification) by multiplying each observed abundance by exp(epsilon),
+    where epsilon ~ N(0, sigma). Negative abundances are set to zero.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_samples, n_species)
+        Species abundance matrix.
+    sigma : float
+        Standard deviation of the log-normal noise. 
+    random_seed : int, optional
+
+    Returns
+    ----------
+    X_noisy : ndarray, same shape as X
+    """
+    rng = np.random.default_rng(random_seed)
+    epsilon = rng.normal(0, sigma, size=X.shape)
+    X_noisy = X * np.exp(epsilon)
+    X_noisy = np.clip(X_noisy, 0, None)
+    return X_noisy
+
+
+def load_dataset_with_noise(did, sigma, random_seed=0):
+    """Load an MTIST dataset and apply measurement noise to abundances.
+
+    Parameters
+    ----------
+    did : int
+        Dataset ID.
+    sigma : float
+        Noise level (see apply_measurement_noise).
+    random_seed : int, optional
+        Random seed for noise generation.
+
+    Returns
+    ----------
+    full_df : pd.DataFrame
+        The dataset with noisy abundances.
+    time : ndarray
+        Time column.
+    X_noisy : ndarray
+        Noisy species abundances.
+    meta_spec : pd.DataFrame
+        Metadata columns.
+    """
+    full_df, time, X, meta_spec = load_dataset_by_did(did)
+    X_noisy = apply_measurement_noise(X, sigma, random_seed=random_seed)
+
+    # Update the dataframe with noisy values
+    species_cols = full_df.columns[full_df.columns.str.contains("species_")]
+    full_df[species_cols] = X_noisy
+
+    return full_df, time, X_noisy, meta_spec
+
+
 ## SOME STUFF ##
 NAMES_100_SP = GLOBALS.names_100_sp

@@ -6,7 +6,6 @@ import statsmodels.api as sm
 from sklearn import linear_model
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-import xarray as xr
 
 # from mtist.mtist_utils import mu.GLOBALS, mu.load_dataset, mu.load_ground_truths, mu.calculate_n_datasets
 from mtist import mtist_utils as mu
@@ -1241,6 +1240,106 @@ def infer_and_save_portion(dids, save_inference=True, save_scores=True):
     #     )
 
     return (df_es_scores, inferred_aijs)
+
+
+def infer_and_score_all_with_noise(sigma, noise_seed=42):
+    """Run inference on all MTIST datasets with measurement noise applied.
+
+    Parameters
+    ----------
+    sigma : float
+        Measurement noise level (see mtist_utils.apply_measurement_noise).
+    noise_seed : int
+        Random seed for noise generation.
+
+    Returns
+    ----------
+    df_es_scores : pd.DataFrame
+        ES scores indexed by did.
+    """
+    meta = pd.read_csv(
+        os.path.join(mu.GLOBALS.MTIST_DATASET_DIR, "mtist_metadata.csv")
+    ).set_index("did")
+    aijs, _ = mu.load_ground_truths(mu.GLOBALS.GT_DIR)
+
+    n_datasets = mu.calculate_n_datasets()
+    raw_scores = {}
+
+    for did in range(n_datasets):
+        # Load dataset, apply noise
+        full_df, time, X_noisy, meta_spec = mu.load_dataset_with_noise(
+            did, sigma, random_seed=noise_seed + did
+        )
+
+        # Prepare data from noisy abundances
+        species_cols = full_df.columns[full_df.columns.str.contains("species_")]
+        X = X_noisy
+        full_time_column = time
+        _, n_species = X.shape
+        codes = meta_spec["timeseries_id"].astype("category").cat.codes.values
+
+        dlogydt_dict = {}
+        nz_masks_dict = {}
+        gmeans_dict = {}
+
+        for i_code in range(len(np.unique(codes))):
+            mask_code = codes == i_code
+            cur_timeseries = X[mask_code].copy()
+            cur_n_intervals = cur_timeseries.shape[0] - 1
+
+            dlogydt_dict[i_code] = []
+            nz_masks_dict[i_code] = []
+            gmeans_dict[i_code] = []
+
+            for i_species in range(n_species):
+                cur_species = cur_timeseries[:, i_species]
+                x, y, z, _ = calc_dlogydt(cur_species, full_time_column[mask_code])
+                dlogydt_dict[i_code].append(x)
+
+                gmeans_tmp = np.ones(cur_n_intervals)
+                valid_int_idx_tmp = np.ones(cur_n_intervals, dtype=bool)
+                for j in range(cur_n_intervals):
+                    gmeans_tmp[j] = np.sqrt(cur_species[j] * cur_species[j + 1])
+                    if cur_species[j] <= 0 or cur_species[j + 1] <= 0:
+                        valid_int_idx_tmp[j] = False
+
+                gmeans_dict[i_code].append(gmeans_tmp)
+                nz_masks_dict[i_code].append(valid_int_idx_tmp)
+
+        cols = pd.Index(range(len(np.unique(codes))), name="timeseries_id")
+        idx = pd.Index(range(n_species), name="species_id")
+        df_dlogydt = pd.DataFrame(dlogydt_dict, columns=cols, index=idx)
+        df_nzmask = pd.DataFrame(nz_masks_dict, columns=cols, index=idx, dtype=bool)
+        df_geom = pd.DataFrame(gmeans_dict, columns=cols, index=idx)
+
+        slopes = []
+        for focal_species in range(n_species):
+            cur_dlogydt = np.concatenate(df_dlogydt.loc[focal_species].values)
+            cur_mask = np.concatenate(df_nzmask.loc[focal_species].values)
+            cur_gmeans = np.array(
+                [np.concatenate(df_geom.loc[i, :].values) for i in range(n_species)]
+            ).T
+            cur_gmeans = cur_gmeans[cur_mask, :].copy()
+
+            if len(cur_dlogydt) <= 1:
+                slopes.append(np.repeat(np.nan, n_species))
+            else:
+                try:
+                    reg = LinearRegression().fit(cur_gmeans, cur_dlogydt)
+                    slopes.append(reg.coef_)
+                except ValueError:
+                    slopes.append(np.repeat(np.nan, n_species))
+
+        inferred_aij = np.vstack(slopes)
+        gt_used = meta.loc[did, "ground_truth"]
+        true_aij = aijs[gt_used]
+        raw_scores[did] = calculate_es_score(true_aij, inferred_aij)
+
+    df_es_scores = pd.DataFrame(
+        [raw_scores], index=["raw"]
+    ).T.sort_index()
+
+    return df_es_scores
 
 
 class INFERENCE_DEFAULTS:

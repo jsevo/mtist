@@ -355,13 +355,14 @@ def _ground_truth_order_perm(n_species):
     return [order.index(name) for name in names]
 
 
-def calculate_es_score(true_aij, inferred_aij) -> float:
+def calculate_es_score(true_aij, inferred_aij, exclude_self_interaction=False) -> float:
     """GRANT'S edited version to calculate ES score
 
     Parameters
     ===============
     true_aij: array-like, the ecosystem coefficient matrix used to generate data
     inferred_aij: array-like, the inferred ecosystem coefficient matrix
+    exclude_self_interaction: set to True if a_ii inference quality should be excluded from ES scoring; default False
 
     Returns
     ===============
@@ -379,6 +380,10 @@ def calculate_es_score(true_aij, inferred_aij) -> float:
     # a non-trivial reordering for the 100-species ecosystem.
     perm = _ground_truth_order_perm(inferred.shape[0])
     inferred = inferred[np.ix_(perm, perm)]
+
+    if exclude_self_interaction:
+        np.fill_diagonal(inferred, 0)
+        np.fill_diagonal(truth, 0)
 
     # consider inferred coefficients
     mask = inferred != 0

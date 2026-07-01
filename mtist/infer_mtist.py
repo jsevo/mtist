@@ -1040,7 +1040,7 @@ def infer_mkspikeseq_by_did(
         return (slopes, intercepts)
 
 
-def calculate_es_score(true_aij, inferred_aij) -> float:
+def calculate_es_score(true_aij, inferred_aij, exclude_self_interaction=False) -> float:
     """Calculate the ecological direction (ES) score.
 
     Delegates to the canonical implementation in mtist_utils.
@@ -1049,11 +1049,14 @@ def calculate_es_score(true_aij, inferred_aij) -> float:
     ===============
     true_aij: ndarray, the ecosystem coefficient matrix used to generate data
     inferred_aij: ndarray, the inferred ecosystem coefficient matrix
+    exclude_self_interaction: if True, drops the diagonal (a_ii) from both the agreement count and the normalization; default False
     Returns
     ===============
     ES_score: float
     """
-    return mu.calculate_es_score(true_aij, inferred_aij)
+    return mu.calculate_es_score(
+        true_aij, inferred_aij, exclude_self_interaction=exclude_self_interaction
+    )
 
 
 def infer_and_score_all(save_inference=True, save_scores=True):
